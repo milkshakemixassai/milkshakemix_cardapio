@@ -2,111 +2,305 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>MilkShakeMiX - Cardápio Digital</title>
   <style>
-    body { font-family: 'Fredoka One', Arial, sans-serif; background: #fff6f9; margin: 0; padding: 0; text-align: center; color: #333; }
-    header { background-color: #ff6cab; color: white; padding: 15px; font-size: 24px; }
-    #menu { margin-top: 20px; }
-    .categoria { background-color: #ffe4ec; border-radius: 12px; margin: 10px; padding: 10px; display: inline-block; width: 90%; max-width: 400px; }
-    button { background-color: #ff6cab; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 16px; }
-    button:hover { background-color: #ff5294; }
-    #detalhes { display: none; margin: 20px; background-color: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin-left: auto; margin-right: auto; }
-    img { max-width: 200px; height: auto; border-radius: 12px; }
-    #logo { width: 100px; margin: 10px auto; display: block; }
+    body{font-family:'Fredoka One',Arial,sans-serif;background:#fff6f9;color:#3a2b2b;margin:0}
+    header{display:flex;align-items:center;justify-content:space-between;background:#ff6cab;color:#fff;padding:12px 16px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{height:40px;width:auto;display:block}
+    h1{margin:0;font-size:22px;letter-spacing:.5px}
+    .top-actions{display:flex;gap:10px;align-items:center}
+    .btn{background:#ffffff22;border:2px solid #ffffff55;color:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:600}
+    .btn:active{transform:scale(.98)}
+    .container{padding:16px;max-width:980px;margin:0 auto}
+    .hint{background:#ffe4ec;border:1px dashed #ff88bd;color:#6a3350;padding:10px;border-radius:10px;text-align:center;margin-bottom:12px}
+    .categoria{margin:22px 0}
+    .categoria h2{display:inline-block;background:#ffe4ec;border-radius:12px;color:#ff4da6;padding:8px 14px;margin:0}
+    .produtos{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+    .produto{width:170px;background:#fff;border-radius:14px;box-shadow:0 3px 6px rgba(0,0,0,.08);cursor:pointer;transition:.15s;text-align:center;padding-bottom:8px}
+    .produto:hover{transform:scale(1.02)}
+    .produto img{width:100%;height:120px;object-fit:cover;border-top-left-radius:14px;border-top-right-radius:14px}
+    .produto h3{margin:10px 8px 0;font-size:16px}
+    /* Detalhes */
+    .detalhes{display:none;position:relative;background:#fff;padding:18px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);max-width:720px;margin:16px auto;text-align:center}
+    .logo-receita{position:absolute;right:12px;top:12px;height:36px;width:auto;opacity:.95;pointer-events:none}
+    .foto{width:100%;max-width:320px;height:auto;display:block;margin:0 auto 12px;border-radius:12px}
+    .tamanhos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0 16px}
+    .tamanho-btn{background:#ffb6c1;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
+    .tamanho-btn.active{background:#ff4da6;color:#fff}
+    h3{text-align:left;margin-top:14px;margin-bottom:8px}
+    p{text-align:left;margin:0}
+    .obs{width:100%;min-height:70px;border:1px solid #e5c3cf;border-radius:10px;padding:10px}
+    .voltar{display:block;margin:16px auto 0;background:#ff4da6;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer}
+    .sr{position:absolute;left:-9999px}
+    @media(max-width:520px){.produto{width:46%}.logo{height:34px}}
   </style>
 </head>
 <body>
   <header>
-    <img id="logo" src="imagens/logo.png" alt="Logo">
-    MilkShakeMiX 🍨
+    <div class="brand">
+      <img src="imagens/logo.png" alt="Logo MilkShakeMiX" class="logo" onerror="this.style.display='none'">
+      <h1>MilkShakeMiX</h1>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btnUpload">📁 Atualizar dados</button>
+      <input type="file" id="fileInput" class="sr" accept=".xlsx">
+    </div>
   </header>
 
-  <div>
-    <button id="uploadBtn">📁 Atualizar dados</button>
-    <input type="file" id="fileInput" accept=".xlsx" style="display:none">
-  </div>
+  <main class="container">
+    <div id="hint" class="hint">
+      Toque em <b>📁 Atualizar dados</b> e selecione sua planilha <i>.xlsx</i> (colunas:
+      <b>Categoria, Produto, Tamanho, Ingredientes, Modo de Preparo, Observações, Imagem</b>).
+      Estão agrupados por <b>Produto</b>; os <b>Tamanhos</b> aparecem como botões.
+    </div>
 
-  <div id="menu"></div>
-  <div id="detalhes">
-    <h2 id="produtoTitulo"></h2>
-    <img id="produtoImagem" src="" alt="Produto">
-    <p><strong>Ingredientes:</strong> <span id="produtoIngredientes"></span></p>
-    <p><strong>Modo de preparo:</strong> <span id="produtoModo"></span></p>
-    <p><strong>Observações:</strong></p>
-    <textarea id="observacoes" rows="3" cols="40" placeholder="Digite aqui..." style="border-radius:8px; padding:5px;"></textarea>
-    <br><button id="voltarBtn">⬅️ Voltar</button>
-  </div>
+    <div id="menu"></div>
 
+    <section id="detalhes" class="detalhes" aria-live="polite">
+      <img src="imagens/logo.png" alt="Logo MilkShakeMiX" class="logo-receita" onerror="this.style.display='none'">
+      <img id="imgProduto" class="foto" src="imagens/generico.png" alt="Imagem do produto">
+      <h2 id="nomeProduto">Produto</h2>
+
+      <div id="tamanhosContainer" class="tamanhos"></div>
+
+      <h3>Ingredientes</h3>
+      <p id="ingredientes">—</p>
+
+      <h3>Modo de Preparo</h3>
+      <p id="modo">—</p>
+
+      <h3>Observações</h3>
+      <textarea id="obs" class="obs" placeholder="Observações..."></textarea>
+
+      <button class="voltar" id="btnVoltar">Voltar ao menu</button>
+    </section>
+  </main>
+
+  <!-- XLSX compatível -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
-    // Compatível com iOS 9 (Safari antigo) - usa FileReader em modo base64
-    var fileInput = document.getElementById('fileInput');
-    var uploadBtn = document.getElementById('uploadBtn');
-    var menu = document.getElementById('menu');
-    var detalhes = document.getElementById('detalhes');
+    // ===== Variáveis globais (ES5 p/ iPad 2) =====
+    var linhas = [];                 // linhas normalizadas da planilha
+    var mapaPorCategoria = {};       // { Categoria: { Produto: [linhas...] } }
+    var produtoAtual = [];           // grupo (todas as linhas) do produto selecionado
 
-    uploadBtn.onclick = function() { fileInput.click(); };
+    // ===== Boot + Upload =====
+    document.getElementById('btnUpload').onclick = function(){ document.getElementById('fileInput').click(); };
 
-    fileInput.onchange = function(e) {
+    document.getElementById('fileInput').onchange = function(e){
       var file = e.target.files[0];
-      if (!file) return;
+      if(!file){ return; }
 
+      // iPad 2: ler como binary string + XLSX.read(..., {type:'binary'})
       var reader = new FileReader();
-      reader.onload = function(evt) {
-        var data = evt.target.result;
-        var workbook = XLSX.read(data, { type: 'binary' }); // modo compatível com iPad 2
-        var sheetName = workbook.SheetNames[0];
-        var sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-        exibirMenu(sheet);
+      reader.onload = function(evt){
+        try {
+          var data = evt.target.result;
+          var wb = XLSX.read(data, { type: 'binary' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var arr = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          linhas = normalizarLinhas(arr);
+          agruparPorCategoriaProduto(linhas);
+          montarMenu();
+          document.getElementById('hint').style.display = 'none';
+          alert('Planilha carregada!');
+        } catch (err) {
+          alert('Não foi possível ler a planilha neste dispositivo.\nDica: verifique se o arquivo .xlsx está válido.\nErro: ' + err);
+        }
       };
-      reader.readAsBinaryString(file); // Base64 compatível com Safari antigo
+      // Safari iOS9 compat
+      if(reader.readAsBinaryString){
+        reader.readAsBinaryString(file);
+      } else {
+        // fallback (não deve ser necessário no iOS9)
+        reader.readAsArrayBuffer(file);
+      }
     };
 
-    function exibirMenu(dados) {
-      menu.innerHTML = '';
-      detalhes.style.display = 'none';
-
-      var categorias = {};
-      for (var i=0; i<dados.length; i++) {
-        var item = dados[i];
-        var cat = item.Categoria || 'Outros';
-        if (!categorias[cat]) categorias[cat] = [];
-        categorias[cat].push(item);
+    // ===== Normalização de colunas =====
+    function normalizarLinhas(arr){
+      function val(row, keys){
+        for(var i=0;i<keys.length;i++){
+          var k = keys[i];
+          if(row.hasOwnProperty(k) && row[k] !== null && row[k] !== undefined){ return String(row[k]); }
+        }
+        return '';
       }
+      var out = [];
+      for(var i=0;i<arr.length;i++){
+        var r = arr[i] || {};
+        var obj = {
+          Categoria: trimSafe(val(r, ['Categoria','categoria'])),
+          Produto: trimSafe(val(r, ['Produto','produto','Nome','nome'])),
+          Tamanho: trimSafe(val(r, ['Tamanho','tamanho'])),
+          Ingredientes: trimSafe(val(r, ['Ingredientes','ingredientes'])),
+          Modo: trimSafe(val(r, ['Modo de Preparo','Modo de preparo','Modo','modo'])),
+          Observacoes: trimSafe(val(r, ['Observações','Observacoes','observacoes'])),
+          Imagem: trimSafe(val(r, ['Imagem','imagem']))
+        };
+        // ignora linhas totalmente vazias
+        if(obj.Categoria || obj.Produto || obj.Tamanho || obj.Ingredientes || obj.Modo || obj.Observacoes || obj.Imagem){
+          out.push(obj);
+        }
+      }
+      return out;
+    }
+    function trimSafe(s){ return (s||'').replace(/\\s+$/,'').replace(/^\\s+/,''); }
 
-      for (var catNome in categorias) {
-        var divCat = document.createElement('div');
-        divCat.className = 'categoria';
+    // ===== Agrupar por Categoria > Produto =====
+    function agruparPorCategoriaProduto(rows){
+      mapaPorCategoria = {};
+      for(var i=0;i<rows.length;i++){
+        var l = rows[i];
+        var cat = l.Categoria || 'Outros';
+        var prod = l.Produto || 'Sem nome';
+        if(!mapaPorCategoria[cat]){ mapaPorCategoria[cat] = {}; }
+        if(!mapaPorCategoria[cat][prod]){ mapaPorCategoria[cat][prod] = []; }
+        mapaPorCategoria[cat][prod].push(l);
+      }
+    }
+
+    // ===== Montar menu principal (Categorias > 1 botão por Produto) =====
+    function montarMenu(){
+      var menu = document.getElementById('menu');
+      menu.innerHTML = '';
+
+      for(var cat in mapaPorCategoria){
+        if(!mapaPorCategoria.hasOwnProperty(cat)) continue;
+
+        var catDiv = document.createElement('div');
+        catDiv.className = 'categoria';
         var h2 = document.createElement('h2');
-        h2.innerHTML = catNome;
-        divCat.appendChild(h2);
+        h2.appendChild(document.createTextNode(cat));
+        catDiv.appendChild(h2);
 
-        for (var j=0; j<categorias[catNome].length; j++) {
-          (function(produto){
-            var btn = document.createElement('button');
-            btn.innerHTML = produto.Produto;
-            btn.onclick = function(){ mostrarDetalhes(produto); };
-            divCat.appendChild(btn);
-          })(categorias[catNome][j]);
+        var grid = document.createElement('div');
+        grid.className = 'produtos';
+
+        for(var prod in mapaPorCategoria[cat]){
+          if(!mapaPorCategoria[cat].hasOwnProperty(prod)) continue;
+
+          var linhasProd = mapaPorCategoria[cat][prod];
+          var qualquer = linhasProd[0] || {};
+          var img = caminhoImagem(qualquer.Imagem);
+
+          var el = document.createElement('div');
+          el.className = 'produto';
+          el.onclick = (function(catName, prodName){
+            return function(){ mostrarDetalhes(catName, prodName); };
+          })(cat, prod);
+
+          var imgel = document.createElement('img');
+          imgel.src = img;
+          imgel.alt = prod;
+          el.appendChild(imgel);
+
+          var h3 = document.createElement('h3');
+          h3.appendChild(document.createTextNode(prod));
+          el.appendChild(h3);
+
+          grid.appendChild(el);
         }
 
-        menu.appendChild(divCat);
+        catDiv.appendChild(grid);
+        menu.appendChild(catDiv);
       }
+      // mostrar menu e esconder detalhes
+      document.getElementById('menu').style.display = 'block';
+      document.getElementById('detalhes').style.display = 'none';
     }
 
-    function mostrarDetalhes(produto) {
-      document.getElementById('produtoTitulo').innerHTML = produto.Produto;
-      document.getElementById('produtoImagem').src = 'imagens/' + (produto.Imagem || 'generico.png');
-      document.getElementById('produtoIngredientes').innerHTML = produto.Ingredientes || '';
-      document.getElementById('produtoModo').innerHTML = produto['Modo de Preparo'] || '';
-      detalhes.style.display = 'block';
+    // ===== Util: caminho da imagem com fallback =====
+    function caminhoImagem(valor){
+      if(!valor){ return 'imagens/generico.png'; }
+      var v = (valor||'').replace(/^\\s+|\\s+$/g,'');
+      // se já vier com caminho relativo/absoluto, mantém; senão prefixa com imagens/
+      if(v.indexOf('imagens/') === 0 || v.indexOf('./') === 0 || v.indexOf('/') === 0){
+        return v;
+      }
+      return 'imagens/' + v;
+    }
+
+    // ===== Mostrar detalhes de um Produto (com botões de Tamanho) =====
+    function mostrarDetalhes(categoria, produto){
+      var detalhes = document.getElementById('detalhes');
+      var menu = document.getElementById('menu');
+      var tamanhosDiv = document.getElementById('tamanhosContainer');
+
+      produtoAtual = (mapaPorCategoria[categoria] && mapaPorCategoria[categoria][produto]) ? mapaPorCategoria[categoria][produto] : [];
+      if(!produtoAtual.length){ return; }
+
+      // header do detalhe
+      var qualquer = produtoAtual[0];
+      document.getElementById('nomeProduto').innerHTML = produto;
+      document.getElementById('imgProduto').src = caminhoImagem(qualquer.Imagem);
+
+      // construir botões de tamanho únicos
+      tamanhosDiv.innerHTML = '';
+      var tamanhosVistos = {};
+      for(var i=0;i<produtoAtual.length;i++){
+        var t = (produtoAtual[i].Tamanho || '').replace(/^\\s+|\\s+$/g,'');
+        if(!t){ continue; }
+        if(!tamanhosVistos[t]){
+          tamanhosVistos[t] = true;
+          (function(tamanhoLocal){
+            var b = document.createElement('button');
+            b.className = 'tamanho-btn';
+            b.appendChild(document.createTextNode(tamanhoLocal));
+            b.onclick = function(){
+              selecionarTamanho(tamanhoLocal);
+            };
+            tamanhosDiv.appendChild(b);
+          })(t);
+        }
+      }
+
+      // se não houver tamanhos definidos, mostra direto a primeira linha
+      if(!tamanhosDiv.childNodes.length){
+        preencherCampos(qualquer);
+      } else {
+        // ativa o primeiro tamanho
+        selecionarTamanho(tamanhosDiv.childNodes[0].textContent || tamanhosDiv.childNodes[0].innerText);
+      }
+
+      // mostra detalhes
       menu.style.display = 'none';
+      detalhes.style.display = 'block';
     }
 
-    document.getElementById('voltarBtn').onclick = function() {
-      detalhes.style.display = 'none';
-      menu.style.display = 'block';
+    // ===== Selecionar tamanho: ativa botão e preenche campos =====
+    function selecionarTamanho(t){
+      // ativa visual
+      var btns = document.querySelectorAll('.tamanho-btn');
+      for(var i=0;i<btns.length;i++){
+        var isActive = (btns[i].textContent === t || btns[i].innerText === t);
+        if(isActive){ btns[i].className = 'tamanho-btn active'; }
+        else{ btns[i].className = 'tamanho-btn'; }
+      }
+      // acha a linha do tamanho
+      var item = null;
+      for(var j=0;j<produtoAtual.length;j++){
+        if((produtoAtual[j].Tamanho || '').replace(/^\\s+|\\s+$/g,'') === t){
+          item = produtoAtual[j]; break;
+        }
+      }
+      if(!item){ item = produtoAtual[0]; }
+      preencherCampos(item);
+    }
+
+    function preencherCampos(item){
+      document.getElementById('ingredientes').textContent = item.Ingredientes || '—';
+      document.getElementById('modo').textContent = item.Modo || '—';
+      document.getElementById('obs').value = item.Observacoes || '';
+      document.getElementById('imgProduto').src = caminhoImagem(item.Imagem);
+    }
+
+    // ===== Voltar ao menu principal =====
+    document.getElementById('btnVoltar').onclick = function(){
+      document.getElementById('detalhes').style.display = 'none';
+      document.getElementById('menu').style.display = 'block';
     };
   </script>
 </body>
