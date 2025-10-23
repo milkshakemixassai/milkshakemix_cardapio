@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MilkShakeMiX Cardápio</title>
+  <style>
+    body{font-family:'Fredoka One', Arial, sans-serif;background:#fff8f9;color:#5a3b2e;margin:0}
+    header{display:flex;align-items:center;justify-content:space-between;background:#ff4da6;color:#fff;padding:12px 16px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo-header{height:44px;width:auto;display:block}
+    header h1{margin:0;font-size:22px;letter-spacing:.5px}
+    .top-actions{display:flex;gap:10px;align-items:center}
+    .btn{background:#ffffff20;border:2px solid #ffffff55;color:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:600}
+    .btn:hover{background:#ffffff35}
+    .container{padding:18px;max-width:1080px;margin:auto}
+    .hint{background:#ffe0ec;border:1px dashed #ff7fbe;color:#7a405e;padding:10px;border-radius:10px;text-align:center;margin-bottom:12px}
+    .categoria{margin:22px 0}
+    .categoria h2{display:inline-block;background:#ffe0ec;border-radius:12px;color:#ff4da6;padding:8px 14px;margin:0}
+    .produtos{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px}
+    .produto{width:170px;background:#fff;border-radius:14px;box-shadow:0 3px 6px rgba(0,0,0,.08);cursor:pointer;transition:.15s}
+    .produto:hover{transform:scale(1.03)}
+    .produto img{width:100%;height:120px;object-fit:cover;border-top-left-radius:14px;border-top-right-radius:14px}
+    .produto h3{margin:10px;font-size:16px;text-align:center}
+
+    .detalhes{display:none;position:relative;background:#fff;padding:18px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);max-width:720px;margin:16px auto;text-align:center}
+    .logo-receita{
+      position:absolute;right:12px;top:12px;height:40px;width:auto;opacity:.95;
+      pointer-events:none; /* não captura cliques/toques */
+    }
+    .detalhes img#imgProduto{width:100%;max-width:320px;height:auto;display:block;margin:0 auto 12px auto;border-radius:12px}
+    .tamanhos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0 16px}
+    .tamanho-btn{background:#ffb6c1;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
+    .tamanho-btn.active{background:#ff4da6;color:#fff}
+    h3{text-align:left;margin-top:16px}
+    p{text-align:left}
+    .voltar{display:block;margin:16px auto;background:#ff4da6;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer}
+    .obs{width:100%;min-height:70px;border:1px solid #e5c3cf;border-radius:10px;padding:10px}
+    .sr{position:absolute;left:-9999px}
+    @media (max-width:520px){
+      .produto{width:46%}
+      .logo-header{height:36px}
+      .logo-receita{height:34px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="imagens/logo.png" alt="Logo MilkShakeMiX" class="logo-header" onerror="this.style.display='none'">
+      <h1>MilkShakeMiX</h1>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btnUpload">📁 Atualizar dados</button>
+      <input type="file" id="fileInput" class="sr" accept=".xlsx,.csv"/>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="hint" class="hint">
+      Toque em <b>📁 Atualizar dados</b> e selecione sua planilha <i>.xlsx</i> (colunas:
+      <b>Categoria, Produto, Tamanho, Ingredientes, Modo de Preparo, Observações, Imagem</b>).
+      Após a primeira vez, os dados ficam salvos no dispositivo e serão carregados automaticamente.
+    </div>
+    <div id="menu"></div>
+
+    <section id="detalhes" class="detalhes" aria-live="polite">
+      <!-- Logo pequena fixa em todas as receitas -->
+      <img src="imagens/logo.png" alt="Logo MilkShakeMiX" class="logo-receita" onerror="this.style.display='none'">
+
+      <img id="imgProduto" src="imagens/generico.png" alt="Imagem do produto"/>
+      <h2 id="nomeProduto">Produto</h2>
+
+      <div id="tamanhosContainer" class="tamanhos"></div>
+
+      <h3>Ingredientes</h3>
+      <p id="ingredientes">—</p>
+
+      <h3>Modo de Preparo</h3>
+      <p id="modo">—</p>
+
+      <h3>Observações</h3>
+      <textarea id="obs" class="obs" placeholder="Observações..."></textarea>
+
+      <button class="voltar" onclick="voltarMenu()">Voltar ao menu</button>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const categoriasComTamanhos = new Set([
+      "MilkShakes Tradicionais",
+      "MilkShakes Especiais",
+      "Açaí Shake"
+    ]);
+
+    const CACHE_KEY = 'msm_receitas_v1';
+    let linhas = [];
+    let produtoSelecionado = [];
+    let categoriaAtual = "";
+
+    (function boot() {
+      try {
+        const cache = localStorage.getItem(CACHE_KEY);
+        if (cache) {
+          const data = JSON.parse(cache);
+          if (Array.isArray(data) && data.length) {
+            linhas = data;
+            document.getElementById('hint').style.display = 'none';
+            montarMenu();
+          }
+        }
+      } catch (_) {}
+    })();
+
+    document.getElementById('btnUpload').addEventListener('click', () => {
+      document.getElementById('fileInput').click();
+    });
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      const finish = (sheetRows) => {
+        linhas = normalizar(sheetRows);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(linhas)); } catch (_) {}
+        montarMenu();
+        document.getElementById('hint').style.display = 'none';
+        alert(`Planilha carregada: ${linhas.length} linha(s). Dados salvos no dispositivo.`);
+      };
+
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        reader.onload = () => {
+          const wb = XLSX.read(reader.result, { type:'string' });
+          const js = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+          finish(js);
+        };
+        reader.readAsText(file, 'utf-8');
+      } else {
+        reader.onload = () => {
+          const data = new Uint8Array(reader.result);
+          const wb = XLSX.read(data, { type:'array' });
+          const js = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+          finish(js);
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    function normalizar(arr){
+      return arr.map(r => ({
+        Categoria: (r.Categoria || r.categoria || '').toString().trim(),
+        Produto: (r.Produto || r.produto || r.Nome || '').toString().trim(),
+        Tamanho: (r.Tamanho || r.tamanho || '').toString().trim(),
+        Ingredientes: (r.Ingredientes || r.ingredientes || '').toString().trim(),
+        Modo: (r['Modo de Preparo'] || r['Modo de preparo'] || r.Modo || '').toString().trim(),
+        Observacoes: (r['Observações'] || r.Observacoes || r.observacoes || '').toString().trim(),
+        Imagem: (r.Imagem || r.imagem || '').toString().trim()
+      })).filter(r => r.Categoria && r.Produto);
+    }
+
+    function montarMenu(){
+      const menu = document.getElementById('menu');
+      menu.innerHTML = '';
+
+      const categorias = [...new Set(linhas.map(l => l.Categoria))];
+      categorias.forEach(cat => {
+        const catDiv = document.createElement('div');
+        catDiv.className = 'categoria';
+        catDiv.innerHTML = `<h2>${cat}</h2>`;
+
+        const grid = document.createElement('div');
+        grid.className = 'produtos';
+
+        const linhasCat = linhas.filter(l => l.Categoria === cat);
+        const produtosUnicos = [...new Set(linhasCat.map(l => l.Produto))];
+
+        produtosUnicos.forEach(nome => {
+          const ref = linhasCat.find(l => l.Produto === nome) || {};
+          const img = caminhoImagem(ref.Imagem);
+
+          const el = document.createElement('div');
+          el.className = 'produto';
+          el.innerHTML = `
+            <img src="${img}" alt="${nome}">
+            <h3>${nome}</h3>
+          `;
+          el.onclick = () => mostrarDetalhes(cat, nome);
+          grid.appendChild(el);
+        });
+
+        catDiv.appendChild(grid);
+        menu.appendChild(catDiv);
+      });
+    }
+
+    function caminhoImagem(valor){
+      if (!valor) return 'imagens/generico.png';
+      const v = valor.trim();
+      return (v.startsWith('imagens/') || v.startsWith('./') || v.startsWith('/')) ? v : `imagens/${v}`;
+    }
+
+    function mostrarDetalhes(categoria, nomeProduto){
+      categoriaAtual = categoria;
+      const detalhes = document.getElementById('detalhes');
+      const menu = document.getElementById('menu');
+      const tamanhosDiv = document.getElementById('tamanhosContainer');
+
+      produtoSelecionado = linhas.filter(l => l.Categoria === categoria && l.Produto === nomeProduto);
+      if (produtoSelecionado.length === 0) return;
+
+      menu.style.display = 'none';
+      detalhes.style.display = 'block';
+
+      const qualquer = produtoSelecionado[0];
+      document.getElementById('nomeProduto').textContent = nomeProduto;
+      document.getElementById('imgProduto').src = caminhoImagem(qualquer.Imagem);
+
+      tamanhosDiv.innerHTML = '';
+      if (categoriasComTamanhos.has(categoria)) {
+        const tamanhos = [...new Set(produtoSelecionado
+          .map(l => (l.Tamanho || '').trim())
+          .filter(t => t && t !== '-'))];
+
+        tamanhos.forEach((t, idx) => {
+          const b = document.createElement('button');
+          b.className = 'tamanho-btn';
+          b.textContent = t;
+          b.onclick = () => selecionarTamanho(t);
+          tamanhosDiv.appendChild(b);
+          if (idx === 0) b.classList.add('active');
+        });
+        selecionarTamanho(tamanhos[0]);
+      } else {
+        tamanhosDiv.innerHTML = '';
+        preencherCampos(qualquer);
+      }
+    }
+
+    function selecionarTamanho(t){
+      const item = produtoSelecionado.find(l => (l.Tamanho || '').trim() === t) || produtoSelecionado[0];
+      document.querySelectorAll('.tamanho-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent === t);
+      });
+      preencherCampos(item);
+    }
+
+    function preencherCampos(item){
+      document.getElementById('ingredientes').textContent = item.Ingredientes || '—';
+      document.getElementById('modo').textContent = item.Modo || '—';
+      document.getElementById('obs').value = item.Observacoes || '';
+      document.getElementById('imgProduto').src = caminhoImagem(item.Imagem);
+    }
+
+    function voltarMenu(){
+      document.getElementById('detalhes').style.display = 'none';
+      document.getElementById('menu').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
