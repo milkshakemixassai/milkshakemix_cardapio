@@ -40,7 +40,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
-    // Compatível com iOS 9 (sem const/let/arrow)
+    // Compatível com iOS 9 (Safari antigo) - usa FileReader em modo base64
     var fileInput = document.getElementById('fileInput');
     var uploadBtn = document.getElementById('uploadBtn');
     var menu = document.getElementById('menu');
@@ -51,15 +51,16 @@
     fileInput.onchange = function(e) {
       var file = e.target.files[0];
       if (!file) return;
+
       var reader = new FileReader();
       reader.onload = function(evt) {
-        var data = new Uint8Array(evt.target.result);
-        var workbook = XLSX.read(data, {type: 'array'});
+        var data = evt.target.result;
+        var workbook = XLSX.read(data, { type: 'binary' }); // modo compatível com iPad 2
         var sheetName = workbook.SheetNames[0];
         var sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
         exibirMenu(sheet);
       };
-      reader.readAsArrayBuffer(file);
+      reader.readAsBinaryString(file); // Base64 compatível com Safari antigo
     };
 
     function exibirMenu(dados) {
