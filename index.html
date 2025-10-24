@@ -57,7 +57,7 @@
       transition: background 0.3s;
     }
     button:hover { background-color: #ff66a3; }
-    .produto {
+    .produto, .tamanho {
       text-align: center;
       background-color: white;
       border-radius: 20px;
@@ -65,29 +65,21 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       animation: fadeIn 0.5s ease;
     }
-    .produto img {
+    .produto img, .tamanho img {
       margin: 15px 0;
       border-radius: 15px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       max-width: 250px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      font-size: 1em;
-    }
-    th, td {
-      border: 1px solid #ffd6e8;
-      padding: 10px;
+    ul {
+      list-style-type: disc;
       text-align: left;
+      margin: 10px auto;
+      width: 80%;
     }
-    th {
-      background-color: #ffb3d9;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #fff0f6;
+    li {
+      margin: 5px 0;
+      line-height: 1.4;
     }
     @keyframes fadeIn {
       from {opacity: 0; transform: translateY(20px);}
@@ -104,7 +96,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    const CACHE_KEY = 'milkshakeMixData_grouped_v2';
+    const CACHE_KEY = 'milkshakeMixData_nav3';
 
     async function loadExcelFile(url) {
       try {
@@ -168,7 +160,7 @@
           const p = produtosUnicos[key][0];
           const btn = document.createElement('button');
           btn.textContent = p.produto;
-          btn.onclick = () => showProductGroup(produtosUnicos[key]);
+          btn.onclick = () => showTamanhos(produtosUnicos[key]);
           div.appendChild(btn);
         });
 
@@ -176,29 +168,39 @@
       }
     }
 
-    function showProductGroup(group) {
+    function showTamanhos(group) {
       const menu = document.getElementById('menu');
       const produto = group[0];
       menu.innerHTML = `
         <div class='produto'>
           <h2>${produto.produto}</h2>
           <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}'>
-          <table>
-            <tr>
-              <th>Tamanho</th>
-              <th>Ingredientes</th>
-              <th>Modo de Preparo</th>
-              <th>Observações</th>
-            </tr>
-            ${group.map(g => `
-              <tr>
-                <td>${g.tamanho || 'Tamanho único'}</td>
-                <td>${g.ingredientes || '—'}</td>
-                <td>${g.modo || '—'}</td>
-                <td>${g.obs || '—'}</td>
-              </tr>`).join('')}
-          </table>
+          <h3>Selecione o tamanho:</h3>
+          ${group.map(g => `<button onclick='showDetalhes(${JSON.stringify(g)})'>${g.tamanho || 'Tamanho único'}</button>`).join('')}
+          <br><br>
           <button onclick='init()'>Voltar</button>
+        </div>`;
+    }
+
+    function showDetalhes(dados) {
+      const menu = document.getElementById('menu');
+
+      const lista = (texto) => {
+        if (!texto) return '<p>—</p>';
+        return '<ul>' + texto.split(';').map(i => `<li>${i.trim()}</li>`).join('') + '</ul>';
+      };
+
+      menu.innerHTML = `
+        <div class='tamanho'>
+          <h2>${dados.produto} - ${dados.tamanho || 'Tamanho único'}</h2>
+          <img src='imagens/${dados.imagem || 'sem_foto.jpg'}' alt='${dados.produto}'>
+          <h3>Ingredientes:</h3>
+          ${lista(dados.ingredientes)}
+          <h3>Modo de Preparo:</h3>
+          ${lista(dados.modo)}
+          ${dados.obs ? `<p><b>Observações:</b> ${dados.obs}</p>` : ''}
+          <br>
+          <button onclick='init()'>Voltar ao Início</button>
         </div>`;
     }
 
