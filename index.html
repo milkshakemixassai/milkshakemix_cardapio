@@ -65,22 +65,45 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       animation: fadeIn 0.5s ease;
     }
-    .produto img, .tamanho img {
-      margin: 15px 0;
+    .colunas {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+    .coluna {
+      width: 45%;
+      min-width: 280px;
+      background-color: #fff0f6;
       border-radius: 15px;
+      padding: 20px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 250px;
+    }
+    h3 {
+      color: #ff3399;
+      border-bottom: 2px solid #ffd6e8;
+      padding-bottom: 5px;
+      text-align: center;
     }
     ul {
       list-style-type: disc;
       text-align: left;
       margin: 10px auto;
-      width: 80%;
+      width: 90%;
     }
-    li {
-      margin: 5px 0;
-      line-height: 1.4;
+    li { margin: 5px 0; line-height: 1.4; }
+    .back-btn {
+      margin-top: 30px;
+      background-color: #ff80b5;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      border: none;
+      cursor: pointer;
     }
+    .back-btn:hover { background-color: #ff4d94; }
     @keyframes fadeIn {
       from {opacity: 0; transform: translateY(20px);}
       to {opacity: 1; transform: translateY(0);}
@@ -96,7 +119,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    const CACHE_KEY = 'milkshakeMixData_nav3';
+    const CACHE_KEY = 'milkshakeMixData_colunas';
 
     async function loadExcelFile(url) {
       try {
@@ -178,29 +201,30 @@
           <h3>Selecione o tamanho:</h3>
           ${group.map(g => `<button onclick='showDetalhes(${JSON.stringify(g)})'>${g.tamanho || 'Tamanho único'}</button>`).join('')}
           <br><br>
-          <button onclick='init()'>Voltar</button>
+          <button class='back-btn' onclick='init()'>Voltar</button>
         </div>`;
     }
 
     function showDetalhes(dados) {
       const menu = document.getElementById('menu');
-
-      const lista = (texto) => {
-        if (!texto) return '<p>—</p>';
-        return '<ul>' + texto.split(';').map(i => `<li>${i.trim()}</li>`).join('') + '</ul>';
-      };
+      const lista = (texto) => !texto ? '<p>—</p>' : '<ul>' + texto.split(';').map(i => `<li>${i.trim()}</li>`).join('') + '</ul>';
 
       menu.innerHTML = `
         <div class='tamanho'>
           <h2>${dados.produto} - ${dados.tamanho || 'Tamanho único'}</h2>
           <img src='imagens/${dados.imagem || 'sem_foto.jpg'}' alt='${dados.produto}'>
-          <h3>Ingredientes:</h3>
-          ${lista(dados.ingredientes)}
-          <h3>Modo de Preparo:</h3>
-          ${lista(dados.modo)}
+          <div class='colunas'>
+            <div class='coluna'>
+              <h3>Ingredientes</h3>
+              ${lista(dados.ingredientes)}
+            </div>
+            <div class='coluna'>
+              <h3>Modo de Preparo</h3>
+              ${lista(dados.modo)}
+            </div>
+          </div>
           ${dados.obs ? `<p><b>Observações:</b> ${dados.obs}</p>` : ''}
-          <br>
-          <button onclick='init()'>Voltar ao Início</button>
+          <button class='back-btn' onclick='init()'>Voltar ao Início</button>
         </div>`;
     }
 
