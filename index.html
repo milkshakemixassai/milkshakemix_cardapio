@@ -1,193 +1,338 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MilkShakeMiX</title>
-<style>
-  body {
-    font-family: 'Fredoka One', sans-serif;
-    background-color: #ffeef6;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-  }
-  header {
-    background-color: #ff5fa2;
-    color: white;
-    padding: 15px 0;
-    font-size: 28px;
-  }
-  button {
-    background-color: #ff5fa2;
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  .categoria {
-    font-size: 22px;
-    color: #ff5fa2;
-    margin-top: 25px;
-    text-align: left;
-    margin-left: 20px;
-  }
-  .grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin: 10px;
-  }
-  .item {
-    background-color: #ffb6d9;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  .detalhes {
-    background-color: white;
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 20px;
-    max-width: 800px;
-    text-align: left;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-  }
-  .colunas {
-    display: flex;
-    justify-content: space-between;
-    gap: 40px;
-  }
-  .coluna {
-    flex: 1;
-  }
-  ul {
-    list-style-type: disc;
-    padding-left: 20px;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MilkShakeMiX - Cardápio Digital</title>
+  <style>
+    body{font-family:'Fredoka One',sans-serif;background:#fff5fa;color:#333;margin:0}
+    header{background:#ff66a3;color:#fff;text-align:center;padding:16px 10px;box-shadow:0 4px 6px rgba(0,0,0,.08)}
+    h1{margin:0;font-size:28px}
+    main{padding:16px;text-align:center}
+    .btn{background:#ff99cc;color:#fff;border:none;padding:10px 16px;border-radius:18px;font-size:15px;cursor:pointer}
+    .btn:hover{background:#ff66a3}
+    .topbar{margin-top:6px}
+    .wrap{max-width:980px;margin:0 auto}
+    .categoria{background:#fff;border-radius:18px;box-shadow:0 4px 10px rgba(0,0,0,.06);padding:16px;margin:14px 0;text-align:left}
+    .categoria h2{color:#ff3399;border-bottom:2px solid #ffd6e8;margin:0 0 10px 0;padding-bottom:6px;font-size:20px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:#ffb6d9;color:#fff;border-radius:18px;padding:8px 12px;cursor:pointer;font-size:14px}
+    .chip:hover{background:#ff66a3}
+    .card{background:#fff;border-radius:18px;box-shadow:0 4px 10px rgba(0,0,0,.08);padding:20px;margin:14px auto;text-align:center}
+    .sizes{margin:10px 0 4px 0}
+    .sizes .btn{margin:4px}
+    .cols{display:flex;gap:28px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:14px;text-align:left}
+    .col{background:#fff0f6;border-radius:14px;padding:14px;min-width:260px;flex:1}
+    .col h3{color:#ff3399;border-bottom:2px solid #ffd6e8;margin:0 0 8px 0;padding-bottom:6px;font-size:16px;text-align:center}
+    ul{margin:8px 0 0 16px}
+    li{margin:4px 0;line-height:1.35}
+    .img{max-width:240px;border-radius:12px;box-shadow:0 4px 8px rgba(0,0,0,.08);margin:10px auto}
+    .muted{color:#777;font-size:14px}
+  </style>
 </head>
 <body>
-<header>
-  MilkShakeMiX<br>
-  <button onclick="atualizarDados()">Atualizar Dados</button>
-</header>
+  <header>
+    <div class="wrap">
+      <h1>MilkShakeMiX</h1>
+      <div class="topbar">
+        <button id="btnAtualizar" class="btn">Atualizar Dados</button>
+      </div>
+    </div>
+  </header>
 
-<div id="conteudo"></div>
+  <main>
+    <div id="app" class="wrap">Carregando dados...</div>
+  </main>
 
-<script>
-async function carregarCSV() {
-  try {
-    const resposta = await fetch('https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.csv?_=' + new Date().getTime());
-    const texto = await resposta.text();
-    const linhas = texto.split(/\r?\n/).filter(l => l.trim().length > 0);
-    const dados = [];
-    for (let i = 1; i < linhas.length; i++) {
-      const partes = linhas[i].match(/(?:\"([^"]*)\"|([^,]+))/g)?.map(v => v.replace(/^\"|\"$/g, '').trim());
-      if (partes && partes.length >= 7) {
-        dados.push({
-          categoria: partes[0],
-          nome: partes[1],
-          tamanho: partes[2],
-          ingredientes: partes[3],
-          preparo: partes[4],
-          observacoes: partes[5],
-          imagem: partes[6]
-        });
+  <script>
+    // ---- Configuração ----
+    var CSV_URL = 'https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.csv';
+    var CACHE_KEY = 'milkshake_csv_cache_v3';
+
+    // Backup mínimo embutido (só para nunca ficar tela vazia)
+    var EMBED_CSV = 'Categoria,Nome,Tamanho,Ingredientes,Modo de Preparo,Observações,Imagem\\n' +
+                    'MilkShakes Tradicionais,Abacaxi,250 ml,"Cobertura de abacaxi; Sorvete de baunilha","Bata no liquidificador; Sirva gelado",,abacaxi.jpg\\n' +
+                    'MilkShakes Tradicionais,Abacaxi,400 ml,"Cobertura de abacaxi; Sorvete de baunilha; Leite","Bata no liquidificador; Sirva gelado",,abacaxi.jpg';
+
+    // ---- Utilidades ----
+    function byId(id){return document.getElementById(id);}
+    function text(el, html){el.innerHTML = html;}
+
+    // Detecta separador (respeitando aspas)
+    function detectSeparator(line) {
+      function countSep(s, sep){
+        var inQ=false,c=0;
+        for(var i=0;i<s.length;i++){
+          var ch=s.charAt(i);
+          if(ch=='"'){ inQ=!inQ; }
+          else if(ch==sep && !inQ){ c++; }
+        }
+        return c;
+      }
+      var commas = countSep(line, ',');
+      var semis  = countSep(line, ';');
+      return (semis > commas) ? ';' : ',';
+    }
+
+    // Parser CSV robusto (RFC-like): suporta aspas, separador variável, \\r/\\n
+    function parseCSV(text){
+      // normaliza line breaks
+      text = text.replace(/\\r\\n/g,'\\n').replace(/\\r/g,'\\n');
+      var lines = [];
+      var row = [];
+      var field = '';
+      var inQ = false;
+      var sep;
+
+      // detecta separador a partir da primeira linha (sem quebrar campos)
+      // percorre apenas até primeira \\n para achar a linha de cabeçalho
+      var firstNL = text.indexOf('\\n');
+      var headerLine = firstNL>=0 ? text.substring(0, firstNL) : text;
+      sep = detectSeparator(headerLine);
+
+      for(var i=0;i<text.length;i++){
+        var ch = text.charAt(i);
+        if(inQ){
+          if(ch=='"'){
+            var next = text.charAt(i+1);
+            if(next=='"'){ field+='"'; i++; } // dupla aspas -> aspas literal
+            else { inQ=false; }
+          } else {
+            field += ch;
+          }
+        } else {
+          if(ch=='"'){ inQ=true; }
+          else if(ch==sep){ row.push(field); field=''; }
+          else if(ch=='\\n'){
+            row.push(field); field='';
+            lines.push(row); row=[];
+          } else {
+            field += ch;
+          }
+        }
+      }
+      // último campo/linha
+      if(field!=='' || row.length>0){ row.push(field); lines.push(row); }
+
+      if(!lines.length) return [];
+
+      // cabeçalho -> mapeia para chaves canônicas
+      var header = lines[0];
+      var map = []; // índices -> chaves
+      for(var h=0;h<header.length;h++){
+        var key = (header[h]||'').toString().trim().toLowerCase();
+        if(key.indexOf('linh')>=0 || key.indexOf('categ')>=0) map[h]='linha';
+        else if(key.indexOf('nome')>=0 || key.indexOf('produto')>=0) map[h]='produto';
+        else if(key.indexOf('tamanho')>=0) map[h]='tamanho';
+        else if(key.indexOf('ingred')>=0) map[h]='ingredientes';
+        else if(key.indexOf('modo')>=0) map[h]='modo';
+        else if(key.indexOf('observ')>=0 || key.indexOf('obs')>=0) map[h]='obs';
+        else if(key.indexOf('imagem')>=0 || key.indexOf('foto')>=0) map[h]='imagem';
+        else map[h]=null;
+      }
+
+      var out = [];
+      for(var r=1;r<lines.length;r++){
+        var rowArr = lines[r];
+        if(!rowArr || !rowArr.length) continue;
+        var obj = {linha:'',produto:'',tamanho:'',ingredientes:'',modo:'',obs:'',imagem:''};
+        for(var c=0;c<rowArr.length;c++){
+          var k = map[c];
+          if(!k) continue;
+          var val = (rowArr[c]||'').toString().trim();
+          obj[k] = val;
+        }
+        // ignora linhas totalmente vazias
+        if(obj.linha || obj.produto || obj.tamanho || obj.ingredientes || obj.modo || obj.obs || obj.imagem){
+          out.push(obj);
+        }
+      }
+      return out;
+    }
+
+    function listFromSemicolons(s){
+      if(!s) return '<p class="muted">—</p>';
+      var parts = s.split(';');
+      var html = '<ul>';
+      for(var i=0;i<parts.length;i++){
+        var t = parts[i].trim();
+        if(t){ html += '<li>'+t+'</li>'; }
+      }
+      return html + '</ul>';
+    }
+
+    // ---- UI ----
+    function renderMenu(data){
+      var app = byId('app');
+      if(!data || !data.length){ text(app, '<p class="muted">Sem dados para exibir.</p>'); return; }
+
+      // agrupa por categoria
+      var cats = {};
+      for(var i=0;i<data.length;i++){
+        var item = data[i];
+        var cat = item.linha || 'Outros';
+        if(!cats[cat]) cats[cat] = [];
+        cats[cat].push(item);
+      }
+
+      var html = '';
+      for(var catName in cats){
+        html += '<div class="categoria"><h2>'+catName+'</h2><div class="chips">';
+        // agrupa por produto (case-insensitive)
+        var group = cats[catName];
+        var byProd = {};
+        for(var j=0;j<group.length;j++){
+          var it = group[j];
+          var key = (it.produto||'').toLowerCase();
+          if(!key) continue;
+          if(!byProd[key]) byProd[key] = [];
+          byProd[key].push(it);
+        }
+        for(var key in byProd){
+          var display = byProd[key][0].produto || 'Produto';
+          html += '<div class="chip" onclick="openProduct(\''+encodeURIComponent(key)+'\')">'+display+'</div>';
+        }
+        html += '</div></div>';
+      }
+
+      text(app, html);
+
+      // guarda agrupamento para navegação
+      window.__DATA_BY_PRODUCT__ = {};
+      for(var cat in cats){
+        var arr = cats[cat];
+        for(var k=0;k<arr.length;k++){
+          var it = arr[k];
+          var prodKey = (it.produto||'').toLowerCase();
+          if(!prodKey) continue;
+          if(!window.__DATA_BY_PRODUCT__[prodKey]) window.__DATA_BY_PRODUCT__[prodKey] = [];
+          window.__DATA_BY_PRODUCT__[prodKey].push(it);
+        }
       }
     }
-    montarInterface(dados);
-  } catch (e) {
-    document.getElementById('conteudo').innerHTML = '<p style="color:red">Erro ao processar a planilha. Verifique o formato do arquivo.</p>';
-  }
-}
 
-function montarInterface(dados) {
-  const area = document.getElementById('conteudo');
-  area.innerHTML = '';
-  const categorias = [...new Set(dados.map(d => d.categoria))];
+    function backHome(){
+      var cached = localStorage.getItem(CACHE_KEY);
+      if(cached){ renderMenu(JSON.parse(cached)); }
+    }
 
-  categorias.forEach(cat => {
-    const h2 = document.createElement('div');
-    h2.className = 'categoria';
-    h2.textContent = cat;
-    area.appendChild(h2);
+    function openProduct(prodKey){
+      var group = window.__DATA_BY_PRODUCT__[prodKey] || [];
+      if(!group.length){ backHome(); return; }
 
-    const grid = document.createElement('div');
-    grid.className = 'grid';
+      // ordenar tamanhos numericamente se possível (250, 400, 500, 700)
+      group.sort(function(a,b){
+        var an = parseInt((a.tamanho||'').replace(/\\D/g,''),10);
+        var bn = parseInt((b.tamanho||'').replace(/\\D/g,''),10);
+        if(isNaN(an)&&isNaN(bn)) return (a.tamanho||'').localeCompare(b.tamanho||'');
+        if(isNaN(an)) return 1;
+        if(isNaN(bn)) return -1;
+        return an - bn;
+      });
 
-    const nomes = [...new Set(dados.filter(d => d.categoria === cat).map(d => d.nome))];
-    nomes.forEach(nome => {
-      const botao = document.createElement('div');
-      botao.className = 'item';
-      botao.textContent = nome;
-      botao.onclick = () => mostrarDetalhes(nome, dados.filter(d => d.nome === nome));
-      grid.appendChild(botao);
-    });
-    area.appendChild(grid);
-  });
-}
+      var p0 = group[0];
+      var app = byId('app');
+      var html = '<div class="card">';
+      html += '<h2>'+ (p0.produto||'Produto') +'</h2>';
+      html += '<img class="img" src="imagens/'+ (p0.imagem||'sem_foto.jpg') +'" alt="'+(p0.produto||'')+'">';
+      html += '<div class="sizes">';
+      for(var i=0;i<group.length;i++){
+        (function(row){
+          var label = row.tamanho || 'Tamanho único';
+          html += '<button class="btn" onclick="openSize('+ i +', \''+ prodKey +'\')">'+ label +'</button>';
+        })(group[i]);
+      }
+      html += '</div>';
+      html += '<div id="sizeDetails"></div>';
+      html += '<div style="margin-top:10px"><button class="btn" onclick="backHome()">Voltar</button></div>';
+      html += '</div>';
 
-function mostrarDetalhes(nome, registros) {
-  const area = document.getElementById('conteudo');
-  area.innerHTML = '';
-  const titulo = document.createElement('h2');
-  titulo.textContent = nome;
-  area.appendChild(titulo);
+      text(app, html);
+      // abre primeiro tamanho por padrão
+      openSize(0, prodKey);
+    }
 
-  const seletor = document.createElement('select');
-  registros.forEach(r => {
-    const opt = document.createElement('option');
-    opt.value = r.tamanho;
-    opt.textContent = r.tamanho;
-    seletor.appendChild(opt);
-  });
-  area.appendChild(seletor);
+    function openSize(idx, prodKey){
+      var group = window.__DATA_BY_PRODUCT__[prodKey] || [];
+      if(!group.length) return;
+      var row = group[idx];
+      var box = byId('sizeDetails');
+      if(!box) return;
 
-  const detalhes = document.createElement('div');
-  detalhes.className = 'detalhes';
-  area.appendChild(detalhes);
+      var html = '<div class="cols">';
+      html +=   '<div class="col"><h3>Ingredientes</h3>'+ listFromSemicolons(row.ingredientes) +'</div>';
+      html +=   '<div class="col"><h3>Modo de Preparo</h3>'+ listFromSemicolons(row.modo) +'</div>';
+      html += '</div>';
+      if(row.obs){ html += '<p class="muted"><b>Observações:</b> '+ row.obs +'</p>'; }
+      text(box, html);
+    }
 
-  function atualizarTamanho(tam) {
-    const reg = registros.find(r => r.tamanho === tam);
-    if (!reg) return;
+    // ---- Carregamento (iPad safe) ----
+    function loadCSV(url, onSuccess, onError){
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url + '?t=' + new Date().getTime(), true);
+      xhr.overrideMimeType('text/plain; charset=utf-8');
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4){
+          if(xhr.status >= 200 && xhr.status < 300){
+            try {
+              var data = parseCSV(xhr.responseText);
+              if(!data.length) throw new Error('CSV vazio');
+              onSuccess(data);
+            } catch(e){
+              onError(e);
+            }
+          } else { onError(new Error('HTTP '+xhr.status)); }
+        }
+      };
+      xhr.send();
+    }
 
-    const ingredientes = reg.ingredientes.split(';').map(i => `<li>${i.trim()}</li>`).join('');
-    const preparo = reg.preparo.split(';').map(p => `<li>${p.trim()}</li>`).join('');
+    function init(){
+      var app = byId('app');
+      text(app, 'Carregando dados...');
+      loadCSV(CSV_URL, function(data){
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        renderMenu(data);
+      }, function(){
+        // tenta cache
+        var cached = localStorage.getItem(CACHE_KEY);
+        if(cached){
+          renderMenu(JSON.parse(cached));
+        } else {
+          // usa backup embutido
+          var data = parseCSV(EMBED_CSV);
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          renderMenu(data);
+        }
+      });
+    }
 
-    detalhes.innerHTML = `
-      <div class="colunas">
-        <div class="coluna">
-          <h3>Ingredientes:</h3>
-          <ul>${ingredientes}</ul>
-        </div>
-        <div class="coluna">
-          <h3>Modo de Preparo:</h3>
-          <ul>${preparo}</ul>
-        </div>
-      </div>
-    `;
-  }
+    // Upload manual (CSV) — compatível com iPad antigo
+    byId('btnAtualizar').onclick = function(){
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv';
+      input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt){
+          try {
+            var data = parseCSV(evt.target.result);
+            if(!data.length) throw new Error('CSV vazio');
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            renderMenu(data);
+          } catch(e){
+            alert('Erro ao processar o CSV: ' + e.message);
+          }
+        };
+        reader.readAsText(file, 'UTF-8');
+      };
+      input.click();
+    };
 
-  seletor.onchange = () => atualizarTamanho(seletor.value);
-  atualizarTamanho(registros[0].tamanho);
-
-  const voltar = document.createElement('button');
-  voltar.textContent = 'Voltar';
-  voltar.onclick = () => carregarCSV();
-  area.appendChild(voltar);
-}
-
-function atualizarDados() {
-  carregarCSV();
-}
-
-carregarCSV();
-</script>
+    window.onload = init;
+  </script>
 </body>
 </html>
