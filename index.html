@@ -19,10 +19,7 @@
       padding: 20px 0;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    h1 {
-      font-size: 2.5em;
-      margin: 0;
-    }
+    h1 { font-size: 2.5em; margin: 0; }
     #updateBtn {
       background-color: white;
       color: #ff66a3;
@@ -33,10 +30,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
     }
-    #updateBtn:hover {
-      background-color: #ffe0ef;
-      transform: scale(1.05);
-    }
+    #updateBtn:hover { background-color: #ffe0ef; transform: scale(1.05); }
     main { padding: 20px; }
     .categoria {
       background-color: white;
@@ -44,11 +38,6 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       margin: 20px 0;
       padding: 20px;
-      transition: all 0.3s ease;
-    }
-    .categoria:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
     }
     .categoria h2 {
       color: #ff3399;
@@ -82,10 +71,12 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       max-width: 250px;
     }
-    .produto p {
-      font-size: 1.1em;
+    .tamanho {
+      background-color: #ffe6f2;
+      margin: 15px 0;
+      padding: 15px;
+      border-radius: 15px;
       text-align: left;
-      margin: 10px 0;
     }
     @keyframes fadeIn {
       from {opacity: 0; transform: translateY(20px);}
@@ -98,17 +89,16 @@
     <h1>MilkShakeMiX</h1>
     <button id="updateBtn">Atualizar Dados</button>
   </header>
-  <main>
-    <div id="menu"></div>
-  </main>
+  <main><div id="menu"></div></main>
+
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    const CACHE_KEY = 'milkshakeMixData_v2';
+    const CACHE_KEY = 'milkshakeMixData_grouped_v1';
 
     async function loadExcelFile(url) {
       try {
         const response = await fetch(url + '?t=' + new Date().getTime(), { cache: 'no-store' });
-        if (!response.ok) throw new Error('Erro ao carregar');
+        if (!response.ok) throw new Error('Erro ao carregar planilha');
         const data = await response.arrayBuffer();
         const workbook = XLSX.read(data, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -117,10 +107,10 @@
         localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
         renderMenu(normalized);
       } catch (err) {
-        console.warn('Falha ao carregar automaticamente:', err);
+        console.warn('Erro ao carregar automaticamente:', err);
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) renderMenu(JSON.parse(cached));
-        else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar a planilha. Use o botão Atualizar Dados.</p>';
+        else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar os dados.</p>';
       }
     }
 
@@ -131,6 +121,7 @@
           const lower = key.trim().toLowerCase();
           if (lower.includes('linha')) n.linha = item[key];
           else if (lower.includes('produto')) n.produto = item[key];
+          else if (lower.includes('tamanho')) n.tamanho = item[key];
           else if (lower.includes('ingrediente')) n.ingredientes = item[key];
           else if (lower.includes('modo')) n.modo = item[key];
           else if (lower.includes('obs')) n.obs = item[key];
@@ -149,30 +140,47 @@
         if (!categorias[c]) categorias[c] = [];
         categorias[c].push(i);
       });
+
       for (const c in categorias) {
         const div = document.createElement('div');
         div.className = 'categoria';
         div.innerHTML = `<h2>${c}</h2>`;
+
+        const produtosUnicos = {};
         categorias[c].forEach(p => {
-          if (!p.produto) return;
+          const nomeBase = (p.produto || '').trim().toLowerCase();
+          if (!nomeBase) return;
+          if (!produtosUnicos[nomeBase]) produtosUnicos[nomeBase] = [];
+          produtosUnicos[nomeBase].push(p);
+        });
+
+        Object.keys(produtosUnicos).forEach(key => {
+          const p = produtosUnicos[key][0];
           const btn = document.createElement('button');
           btn.textContent = p.produto;
-          btn.onclick = () => showProduct(p);
+          btn.onclick = () => showProductGroup(produtosUnicos[key]);
           div.appendChild(btn);
         });
+
         menu.appendChild(div);
       }
     }
 
-    function showProduct(p) {
+    function showProductGroup(group) {
       const menu = document.getElementById('menu');
+      const produto = group[0];
       menu.innerHTML = `
         <div class='produto'>
-          <h2>${p.produto || 'Produto sem nome'}</h2>
-          <img src='imagens/${p.imagem || 'sem_foto.jpg'}' alt='${p.produto}'>
-          <p><b>Ingredientes:</b> ${p.ingredientes || '—'}</p>
-          <p><b>Modo de Preparo:</b> ${p.modo || '—'}</p>
-          ${p.obs ? `<p><b>Observações:</b> ${p.obs}</p>` : ''}
+          <h2>${produto.produto}</h2>
+          <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}'>
+          ${group.map(g => `
+            <div class='tamanho'>
+              <h3>${g.tamanho || 'Tamanho único'}</h3>
+              <p><b>Ingredientes:</b> ${g.ingredientes || '—'}</p>
+              <p><b>Modo de Preparo:</b> ${g.modo || '—'}</p>
+              ${g.obs ? `<p><b>Obs:</b> ${g.obs}</p>` : ''}
+            </div>
+          `).join('')}
           <button onclick='init()'>Voltar</button>
         </div>`;
     }
@@ -199,7 +207,6 @@
         localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
         renderMenu(normalized);
       };
-      reader.onerror = () => alert('Erro ao ler arquivo.');
       reader.readAsArrayBuffer(file);
     }
 
