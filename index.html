@@ -25,12 +25,29 @@
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        localStorage.setItem('milkshakeMixData', JSON.stringify(json));
-        renderMenu(json);
+        const normalized = normalizeHeaders(json);
+        localStorage.setItem('milkshakeMixData', JSON.stringify(normalized));
+        renderMenu(normalized);
       } catch (err) {
         console.error(err);
         document.getElementById('menu').innerHTML = `<p style='color:red'>Não foi possível carregar a planilha automaticamente.<br>Use o botão "Atualizar Dados" para selecionar manualmente.</p>`;
       }
+    }
+
+    function normalizeHeaders(data) {
+      return data.map(item => {
+        const newItem = {};
+        for (const key in item) {
+          const lower = key.trim().toLowerCase();
+          if (lower.includes('linha')) newItem.linha = item[key];
+          else if (lower.includes('produto')) newItem.produto = item[key];
+          else if (lower.includes('ingrediente')) newItem.ingredientes = item[key];
+          else if (lower.includes('modo')) newItem.modo = item[key];
+          else if (lower.includes('obs')) newItem.obs = item[key];
+          else if (lower.includes('imagem')) newItem.imagem = item[key];
+        }
+        return newItem;
+      });
     }
 
     function renderMenu(data) {
@@ -52,6 +69,7 @@
         catDiv.appendChild(h2);
 
         categorias[categoria].forEach(produto => {
+          if (!produto.produto) return;
           const btn = document.createElement('button');
           btn.textContent = produto.produto;
           btn.onclick = () => showProduct(produto);
@@ -65,10 +83,10 @@
       const menuDiv = document.getElementById('menu');
       menuDiv.innerHTML = `
         <div class='produto'>
-          <h2>${produto.produto}</h2>
+          <h2>${produto.produto || 'Produto sem nome'}</h2>
           <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}' style='max-width:250px;border-radius:10px;'>
-          <p><b>Ingredientes:</b> ${produto.ingredientes}</p>
-          <p><b>Modo de Preparo:</b> ${produto.modo}</p>
+          <p><b>Ingredientes:</b> ${produto.ingredientes || '—'}</p>
+          <p><b>Modo de Preparo:</b> ${produto.modo || '—'}</p>
           ${produto.obs ? `<p><b>Observações:</b> ${produto.obs}</p>` : ''}
           <button onclick='init()'>Voltar ao Menu</button>
         </div>
@@ -83,8 +101,9 @@
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        localStorage.setItem('milkshakeMixData', JSON.stringify(json));
-        renderMenu(json);
+        const normalized = normalizeHeaders(json);
+        localStorage.setItem('milkshakeMixData', JSON.stringify(normalized));
+        renderMenu(normalized);
       };
       reader.readAsArrayBuffer(file);
     }
@@ -102,7 +121,6 @@
       if (cached) {
         renderMenu(JSON.parse(cached));
       } else {
-        // Carregamento automático direto do GitHub
         loadExcelFile('https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.xlsx');
       }
     }
