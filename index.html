@@ -1,267 +1,193 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MilkShakeMiX - Cardápio Digital</title>
-  <style>
-    body {
-      font-family: 'Fredoka One', sans-serif;
-      background-color: #fff5fa;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #ff66a3;
-      color: white;
-      text-align: center;
-      padding: 20px 0;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    h1 { font-size: 2.5em; margin: 0; }
-    #updateBtn {
-      background-color: white;
-      color: #ff66a3;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 25px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    main { padding: 20px; text-align: center; }
-    .loading { color: #ff3399; font-size: 1.2em; }
-    .categoria {
-      background-color: white;
-      border-radius: 20px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      margin: 20px 0;
-      padding: 20px;
-    }
-    .categoria h2 {
-      color: #ff3399;
-      border-bottom: 2px solid #ffd6e8;
-      padding-bottom: 5px;
-      margin-bottom: 10px;
-    }
-    button {
-      background-color: #ff99cc;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 10px;
-      font-size: 1em;
-      margin: 5px;
-      cursor: pointer;
-    }
-    button:hover { background-color: #ff66a3; }
-    .produto, .tamanho {
-      text-align: center;
-      background-color: white;
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .colunas {
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 40px;
-      margin-top: 30px;
-      flex-wrap: wrap;
-    }
-    .coluna {
-      width: 45%;
-      min-width: 280px;
-      background-color: #fff0f6;
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    h3 {
-      color: #ff3399;
-      border-bottom: 2px solid #ffd6e8;
-      padding-bottom: 5px;
-      text-align: center;
-    }
-    ul { list-style-type: disc; text-align: left; margin: 10px auto; width: 90%; }
-    li { margin: 5px 0; line-height: 1.4; }
-    .back-btn {
-      margin-top: 30px;
-      background-color: #ff80b5;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 25px;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MilkShakeMiX</title>
+<style>
+  body {
+    font-family: 'Fredoka One', sans-serif;
+    background-color: #ffeef6;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  header {
+    background-color: #ff5fa2;
+    color: white;
+    padding: 15px 0;
+    font-size: 28px;
+  }
+  button {
+    background-color: #ff5fa2;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .categoria {
+    font-size: 22px;
+    color: #ff5fa2;
+    margin-top: 25px;
+    text-align: left;
+    margin-left: 20px;
+  }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px;
+  }
+  .item {
+    background-color: #ffb6d9;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .detalhes {
+    background-color: white;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 20px;
+    max-width: 800px;
+    text-align: left;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+  }
+  .colunas {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+  }
+  .coluna {
+    flex: 1;
+  }
+  ul {
+    list-style-type: disc;
+    padding-left: 20px;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>MilkShakeMiX</h1>
-    <button id="updateBtn">Atualizar Dados</button>
-  </header>
-  <main><div id="menu" class="loading">Carregando dados...</div></main>
+<header>
+  MilkShakeMiX<br>
+  <button onclick="atualizarDados()">Atualizar Dados</button>
+</header>
 
-  <script>
-    var CACHE_KEY = 'milkshakeMixData_CSV';
-    var FILE_URL = 'https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.csv';
+<div id="conteudo"></div>
 
-    function loadCSVFile(url) {
-      document.getElementById('menu').innerHTML = "<p class='loading'>Carregando dados...</p>";
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', url + '?v=' + new Date().getTime(), true);
-      xhr.overrideMimeType('text/plain; charset=utf-8');
-
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          try {
-            var data = parseCSV(xhr.responseText);
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-            renderMenu(data);
-          } catch (e) {
-            console.log(e);
-            showError('Erro ao processar o CSV. Verifique o formato do arquivo.');
-          }
-        } else {
-          useCacheOrError();
-        }
-      };
-
-      xhr.onerror = useCacheOrError;
-      xhr.send();
-    }
-
-    function parseCSV(text) {
-      var lines = text.trim().split(/\r?\n/);
-      var headers = lines[0].split(',');
-      var result = [];
-
-      for (var i = 1; i < lines.length; i++) {
-        var obj = {};
-        var current = lines[i].split(',');
-        for (var j = 0; j < headers.length; j++) {
-          var key = headers[j].trim().toLowerCase();
-          var val = current[j] ? current[j].trim() : '';
-          if (key.indexOf('linha') >= 0) obj.linha = val;
-          else if (key.indexOf('produto') >= 0) obj.produto = val;
-          else if (key.indexOf('tamanho') >= 0) obj.tamanho = val;
-          else if (key.indexOf('ingrediente') >= 0) obj.ingredientes = val;
-          else if (key.indexOf('modo') >= 0) obj.modo = val;
-          else if (key.indexOf('obs') >= 0) obj.obs = val;
-          else if (key.indexOf('imagem') >= 0) obj.imagem = val;
-        }
-        result.push(obj);
-      }
-      return result;
-    }
-
-    function showError(msg) {
-      var cached = localStorage.getItem(CACHE_KEY);
-      if (cached) renderMenu(JSON.parse(cached));
-      else document.getElementById('menu').innerHTML = '<p style="color:red">' + msg + '</p>';
-    }
-
-    function useCacheOrError() {
-      var cached = localStorage.getItem(CACHE_KEY);
-      if (cached) renderMenu(JSON.parse(cached));
-      else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar dados.</p>';
-    }
-
-    function renderMenu(data) {
-      var menu = document.getElementById('menu');
-      menu.innerHTML = '';
-      var categorias = {};
-      for (var i = 0; i < data.length; i++) {
-        var c = data[i].linha || 'Outros';
-        if (!categorias[c]) categorias[c] = [];
-        categorias[c].push(data[i]);
-      }
-      for (var cat in categorias) {
-        var div = document.createElement('div');
-        div.className = 'categoria';
-        div.innerHTML = '<h2>' + cat + '</h2>';
-        var produtosUnicos = {};
-        for (var j = 0; j < categorias[cat].length; j++) {
-          var p = categorias[cat][j];
-          var nome = (p.produto || '').toLowerCase();
-          if (!nome) continue;
-          if (!produtosUnicos[nome]) produtosUnicos[nome] = [];
-          produtosUnicos[nome].push(p);
-        }
-        for (var nome in produtosUnicos) {
-          var p = produtosUnicos[nome][0];
-          var btn = document.createElement('button');
-          btn.textContent = p.produto;
-          btn.onclick = (function(grupo) {
-            return function() { showTamanhos(grupo); };
-          })(produtosUnicos[nome]);
-          div.appendChild(btn);
-        }
-        menu.appendChild(div);
+<script>
+async function carregarCSV() {
+  try {
+    const resposta = await fetch('https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.csv?_=' + new Date().getTime());
+    const texto = await resposta.text();
+    const linhas = texto.split(/\r?\n/).filter(l => l.trim().length > 0);
+    const dados = [];
+    for (let i = 1; i < linhas.length; i++) {
+      const partes = linhas[i].match(/(?:\"([^"]*)\"|([^,]+))/g)?.map(v => v.replace(/^\"|\"$/g, '').trim());
+      if (partes && partes.length >= 7) {
+        dados.push({
+          categoria: partes[0],
+          nome: partes[1],
+          tamanho: partes[2],
+          ingredientes: partes[3],
+          preparo: partes[4],
+          observacoes: partes[5],
+          imagem: partes[6]
+        });
       }
     }
+    montarInterface(dados);
+  } catch (e) {
+    document.getElementById('conteudo').innerHTML = '<p style="color:red">Erro ao processar a planilha. Verifique o formato do arquivo.</p>';
+  }
+}
 
-    function showTamanhos(group) {
-      var menu = document.getElementById('menu');
-      var produto = group[0];
-      var html = "<div class='produto'><h2>" + produto.produto + "</h2>";
-      html += "<img src='imagens/" + (produto.imagem || "sem_foto.jpg") + "' alt='" + produto.produto + "'>";
-      html += "<h3>Selecione o tamanho:</h3>";
-      for (var i = 0; i < group.length; i++) {
-        html += "<button onclick='showDetalhes(" + JSON.stringify(group[i]).replace(/'/g, "&apos;") + ")'>" + (group[i].tamanho || 'Tamanho único') + "</button>";
-      }
-      html += "<br><br><button class='back-btn' onclick='init()'>Voltar</button></div>";
-      menu.innerHTML = html;
-    }
+function montarInterface(dados) {
+  const area = document.getElementById('conteudo');
+  area.innerHTML = '';
+  const categorias = [...new Set(dados.map(d => d.categoria))];
 
-    function showDetalhes(d) {
-      var menu = document.getElementById('menu');
-      function lista(txt) {
-        if (!txt) return '<p>—</p>';
-        var partes = txt.split(';');
-        var out = '<ul>';
-        for (var i = 0; i < partes.length; i++) {
-          out += '<li>' + partes[i].trim() + '</li>';
-        }
-        out += '</ul>';
-        return out;
-      }
-      var html = "<div class='tamanho'><h2>" + d.produto + " - " + (d.tamanho || 'Tamanho único') + "</h2>";
-      html += "<img src='imagens/" + (d.imagem || "sem_foto.jpg") + "' alt='" + d.produto + "'>";
-      html += "<div class='colunas'><div class='coluna'><h3>Ingredientes</h3>" + lista(d.ingredientes) + "</div>";
-      html += "<div class='coluna'><h3>Modo de Preparo</h3>" + lista(d.modo) + "</div></div>";
-      if (d.obs) html += "<p><b>Observações:</b> " + d.obs + "</p>";
-      html += "<button class='back-btn' onclick='init()'>Voltar ao Início</button></div>";
-      menu.innerHTML = html;
-    }
+  categorias.forEach(cat => {
+    const h2 = document.createElement('div');
+    h2.className = 'categoria';
+    h2.textContent = cat;
+    area.appendChild(h2);
 
-    document.getElementById('updateBtn').onclick = function() {
-      var input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.csv';
-      input.onchange = function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          var data = parseCSV(e.target.result);
-          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          renderMenu(data);
-        };
-        reader.readAsText(file, 'UTF-8');
-      };
-      input.click();
-    };
+    const grid = document.createElement('div');
+    grid.className = 'grid';
 
-    function init() {
-      var cached = localStorage.getItem(CACHE_KEY);
-      if (cached) renderMenu(JSON.parse(cached));
-      else loadCSVFile(FILE_URL);
-    }
+    const nomes = [...new Set(dados.filter(d => d.categoria === cat).map(d => d.nome))];
+    nomes.forEach(nome => {
+      const botao = document.createElement('div');
+      botao.className = 'item';
+      botao.textContent = nome;
+      botao.onclick = () => mostrarDetalhes(nome, dados.filter(d => d.nome === nome));
+      grid.appendChild(botao);
+    });
+    area.appendChild(grid);
+  });
+}
 
-    window.onload = init;
-  </script>
+function mostrarDetalhes(nome, registros) {
+  const area = document.getElementById('conteudo');
+  area.innerHTML = '';
+  const titulo = document.createElement('h2');
+  titulo.textContent = nome;
+  area.appendChild(titulo);
+
+  const seletor = document.createElement('select');
+  registros.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.tamanho;
+    opt.textContent = r.tamanho;
+    seletor.appendChild(opt);
+  });
+  area.appendChild(seletor);
+
+  const detalhes = document.createElement('div');
+  detalhes.className = 'detalhes';
+  area.appendChild(detalhes);
+
+  function atualizarTamanho(tam) {
+    const reg = registros.find(r => r.tamanho === tam);
+    if (!reg) return;
+
+    const ingredientes = reg.ingredientes.split(';').map(i => `<li>${i.trim()}</li>`).join('');
+    const preparo = reg.preparo.split(';').map(p => `<li>${p.trim()}</li>`).join('');
+
+    detalhes.innerHTML = `
+      <div class="colunas">
+        <div class="coluna">
+          <h3>Ingredientes:</h3>
+          <ul>${ingredientes}</ul>
+        </div>
+        <div class="coluna">
+          <h3>Modo de Preparo:</h3>
+          <ul>${preparo}</ul>
+        </div>
+      </div>
+    `;
+  }
+
+  seletor.onchange = () => atualizarTamanho(seletor.value);
+  atualizarTamanho(registros[0].tamanho);
+
+  const voltar = document.createElement('button');
+  voltar.textContent = 'Voltar';
+  voltar.onclick = () => carregarCSV();
+  area.appendChild(voltar);
+}
+
+function atualizarDados() {
+  carregarCSV();
+}
+
+carregarCSV();
+</script>
 </body>
 </html>
