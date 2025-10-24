@@ -29,7 +29,8 @@
       font-weight: bold;
       cursor: pointer;
     }
-    main { padding: 20px; }
+    main { padding: 20px; text-align: center; }
+    .loading { color: #ff3399; font-size: 1.2em; }
     .categoria {
       background-color: white;
       border-radius: 20px;
@@ -101,42 +102,61 @@
     <h1>MilkShakeMiX</h1>
     <button id="updateBtn">Atualizar Dados</button>
   </header>
-  <main><div id="menu"></div></main>
+  <main><div id="menu" class="loading">Carregando dados...</div></main>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     var CACHE_KEY = 'milkshakeMixData_iPad';
+    var FILE_URL = 'https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.xlsx';
+
+    function isOldSafari() {
+      return navigator.userAgent.indexOf('Safari') > -1 && navigator.userAgent.indexOf('Version/9') > -1;
+    }
 
     function loadExcelFile(url) {
+      document.getElementById('menu').innerHTML = "<p class='loading'>Carregando dados...</p>";
       var xhr = new XMLHttpRequest();
       xhr.open('GET', url + '?v=' + new Date().getTime(), true);
-      xhr.responseType = 'arraybuffer';
+      xhr.responseType = isOldSafari() ? 'text' : 'arraybuffer';
 
       xhr.onload = function() {
         if (xhr.status === 200) {
           try {
-            var data = new Uint8Array(xhr.response);
-            var workbook = XLSX.read(data, { type: 'array' });
+            var workbook;
+            if (isOldSafari()) {
+              workbook = XLSX.read(xhr.response, { type: 'binary' });
+            } else {
+              var data = new Uint8Array(xhr.response);
+              workbook = XLSX.read(data, { type: 'array' });
+            }
             var sheet = workbook.Sheets[workbook.SheetNames[0]];
             var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
             var normalized = normalizeHeaders(json);
             localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
             renderMenu(normalized);
           } catch (e) {
-            document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao processar planilha.</p>';
+            console.log(e);
+            showError('Erro ao processar a planilha. Verifique o formato do arquivo.');
           }
         } else {
-          var cached = localStorage.getItem(CACHE_KEY);
-          if (cached) renderMenu(JSON.parse(cached));
-          else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar dados.</p>';
+          useCacheOrError();
         }
       };
-      xhr.onerror = function() {
-        var cached = localStorage.getItem(CACHE_KEY);
-        if (cached) renderMenu(JSON.parse(cached));
-        else document.getElementById('menu').innerHTML = '<p style="color:red">Erro de conexão.</p>';
-      };
+
+      xhr.onerror = useCacheOrError;
       xhr.send();
+    }
+
+    function showError(msg) {
+      var cached = localStorage.getItem(CACHE_KEY);
+      if (cached) renderMenu(JSON.parse(cached));
+      else document.getElementById('menu').innerHTML = '<p style="color:red">' + msg + '</p>';
+    }
+
+    function useCacheOrError() {
+      var cached = localStorage.getItem(CACHE_KEY);
+      if (cached) renderMenu(JSON.parse(cached));
+      else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar dados.</p>';
     }
 
     function normalizeHeaders(data) {
@@ -252,7 +272,7 @@
     function init() {
       var cached = localStorage.getItem(CACHE_KEY);
       if (cached) renderMenu(JSON.parse(cached));
-      else loadExcelFile('https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.xlsx');
+      else loadExcelFile(FILE_URL);
     }
 
     window.onload = init;
