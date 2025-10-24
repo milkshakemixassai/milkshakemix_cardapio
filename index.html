@@ -104,39 +104,25 @@
   </header>
   <main><div id="menu" class="loading">Carregando dados...</div></main>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    var CACHE_KEY = 'milkshakeMixData_iPad';
-    var FILE_URL = 'https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.xlsx';
+    var CACHE_KEY = 'milkshakeMixData_CSV';
+    var FILE_URL = 'https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.csv';
 
-    function isOldSafari() {
-      return navigator.userAgent.indexOf('Safari') > -1 && navigator.userAgent.indexOf('Version/9') > -1;
-    }
-
-    function loadExcelFile(url) {
+    function loadCSVFile(url) {
       document.getElementById('menu').innerHTML = "<p class='loading'>Carregando dados...</p>";
       var xhr = new XMLHttpRequest();
       xhr.open('GET', url + '?v=' + new Date().getTime(), true);
-      xhr.responseType = isOldSafari() ? 'text' : 'arraybuffer';
+      xhr.overrideMimeType('text/plain; charset=utf-8');
 
       xhr.onload = function() {
         if (xhr.status === 200) {
           try {
-            var workbook;
-            if (isOldSafari()) {
-              workbook = XLSX.read(xhr.response, { type: 'binary' });
-            } else {
-              var data = new Uint8Array(xhr.response);
-              workbook = XLSX.read(data, { type: 'array' });
-            }
-            var sheet = workbook.Sheets[workbook.SheetNames[0]];
-            var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-            var normalized = normalizeHeaders(json);
-            localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
-            renderMenu(normalized);
+            var data = parseCSV(xhr.responseText);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            renderMenu(data);
           } catch (e) {
             console.log(e);
-            showError('Erro ao processar a planilha. Verifique o formato do arquivo.');
+            showError('Erro ao processar o CSV. Verifique o formato do arquivo.');
           }
         } else {
           useCacheOrError();
@@ -145,6 +131,30 @@
 
       xhr.onerror = useCacheOrError;
       xhr.send();
+    }
+
+    function parseCSV(text) {
+      var lines = text.trim().split(/\r?\n/);
+      var headers = lines[0].split(',');
+      var result = [];
+
+      for (var i = 1; i < lines.length; i++) {
+        var obj = {};
+        var current = lines[i].split(',');
+        for (var j = 0; j < headers.length; j++) {
+          var key = headers[j].trim().toLowerCase();
+          var val = current[j] ? current[j].trim() : '';
+          if (key.indexOf('linha') >= 0) obj.linha = val;
+          else if (key.indexOf('produto') >= 0) obj.produto = val;
+          else if (key.indexOf('tamanho') >= 0) obj.tamanho = val;
+          else if (key.indexOf('ingrediente') >= 0) obj.ingredientes = val;
+          else if (key.indexOf('modo') >= 0) obj.modo = val;
+          else if (key.indexOf('obs') >= 0) obj.obs = val;
+          else if (key.indexOf('imagem') >= 0) obj.imagem = val;
+        }
+        result.push(obj);
+      }
+      return result;
     }
 
     function showError(msg) {
@@ -157,26 +167,6 @@
       var cached = localStorage.getItem(CACHE_KEY);
       if (cached) renderMenu(JSON.parse(cached));
       else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar dados.</p>';
-    }
-
-    function normalizeHeaders(data) {
-      var result = [];
-      for (var i = 0; i < data.length; i++) {
-        var item = data[i];
-        var obj = {};
-        for (var key in item) {
-          var lower = key.toLowerCase();
-          if (lower.indexOf('linha') >= 0) obj.linha = item[key];
-          else if (lower.indexOf('produto') >= 0) obj.produto = item[key];
-          else if (lower.indexOf('tamanho') >= 0) obj.tamanho = item[key];
-          else if (lower.indexOf('ingrediente') >= 0) obj.ingredientes = item[key];
-          else if (lower.indexOf('modo') >= 0) obj.modo = item[key];
-          else if (lower.indexOf('obs') >= 0) obj.obs = item[key];
-          else if (lower.indexOf('imagem') >= 0) obj.imagem = item[key];
-        }
-        result.push(obj);
-      }
-      return result;
     }
 
     function renderMenu(data) {
@@ -250,21 +240,17 @@
     document.getElementById('updateBtn').onclick = function() {
       var input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.xlsx';
+      input.accept = '.csv';
       input.onchange = function(e) {
         var file = e.target.files[0];
         if (!file) return;
         var reader = new FileReader();
         reader.onload = function(e) {
-          var data = e.target.result;
-          var wb = XLSX.read(data, { type: 'binary' });
-          var sheet = wb.Sheets[wb.SheetNames[0]];
-          var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-          var normalized = normalizeHeaders(json);
-          localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
-          renderMenu(normalized);
+          var data = parseCSV(e.target.result);
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          renderMenu(data);
         };
-        reader.readAsBinaryString(file);
+        reader.readAsText(file, 'UTF-8');
       };
       input.click();
     };
@@ -272,7 +258,7 @@
     function init() {
       var cached = localStorage.getItem(CACHE_KEY);
       if (cached) renderMenu(JSON.parse(cached));
-      else loadExcelFile(FILE_URL);
+      else loadCSVFile(FILE_URL);
     }
 
     window.onload = init;
