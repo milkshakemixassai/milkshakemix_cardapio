@@ -28,9 +28,7 @@
       border-radius: 25px;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.3s ease;
     }
-    #updateBtn:hover { background-color: #ffe0ef; transform: scale(1.05); }
     main { padding: 20px; }
     .categoria {
       background-color: white;
@@ -54,7 +52,6 @@
       font-size: 1em;
       margin: 5px;
       cursor: pointer;
-      transition: background 0.3s;
     }
     button:hover { background-color: #ff66a3; }
     .produto, .tamanho {
@@ -63,7 +60,6 @@
       border-radius: 20px;
       padding: 30px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      animation: fadeIn 0.5s ease;
     }
     .colunas {
       display: flex;
@@ -87,12 +83,7 @@
       padding-bottom: 5px;
       text-align: center;
     }
-    ul {
-      list-style-type: disc;
-      text-align: left;
-      margin: 10px auto;
-      width: 90%;
-    }
+    ul { list-style-type: disc; text-align: left; margin: 10px auto; width: 90%; }
     li { margin: 5px 0; line-height: 1.4; }
     .back-btn {
       margin-top: 30px;
@@ -102,11 +93,6 @@
       border-radius: 25px;
       border: none;
       cursor: pointer;
-    }
-    .back-btn:hover { background-color: #ff4d94; }
-    @keyframes fadeIn {
-      from {opacity: 0; transform: translateY(20px);}
-      to {opacity: 1; transform: translateY(0);}
     }
   </style>
 </head>
@@ -119,147 +105,157 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    const CACHE_KEY = 'milkshakeMixData_colunas';
+    var CACHE_KEY = 'milkshakeMixData_iPad';
 
-    async function loadExcelFile(url) {
-      try {
-        const response = await fetch(url + '?t=' + new Date().getTime(), { cache: 'no-store' });
-        if (!response.ok) throw new Error('Erro ao carregar planilha');
-        const data = await response.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        const normalized = normalizeHeaders(json);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
-        renderMenu(normalized);
-      } catch (err) {
-        const cached = localStorage.getItem(CACHE_KEY);
+    function loadExcelFile(url) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url + '?v=' + new Date().getTime(), true);
+      xhr.responseType = 'arraybuffer';
+
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          try {
+            var data = new Uint8Array(xhr.response);
+            var workbook = XLSX.read(data, { type: 'array' });
+            var sheet = workbook.Sheets[workbook.SheetNames[0]];
+            var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            var normalized = normalizeHeaders(json);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
+            renderMenu(normalized);
+          } catch (e) {
+            document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao processar planilha.</p>';
+          }
+        } else {
+          var cached = localStorage.getItem(CACHE_KEY);
+          if (cached) renderMenu(JSON.parse(cached));
+          else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar dados.</p>';
+        }
+      };
+      xhr.onerror = function() {
+        var cached = localStorage.getItem(CACHE_KEY);
         if (cached) renderMenu(JSON.parse(cached));
-        else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar os dados.</p>';
-      }
+        else document.getElementById('menu').innerHTML = '<p style="color:red">Erro de conexão.</p>';
+      };
+      xhr.send();
     }
 
     function normalizeHeaders(data) {
-      return data.map(item => {
-        const n = {};
-        for (const key in item) {
-          const lower = key.trim().toLowerCase();
-          if (lower.includes('linha')) n.linha = item[key];
-          else if (lower.includes('produto')) n.produto = item[key];
-          else if (lower.includes('tamanho')) n.tamanho = item[key];
-          else if (lower.includes('ingrediente')) n.ingredientes = item[key];
-          else if (lower.includes('modo')) n.modo = item[key];
-          else if (lower.includes('obs')) n.obs = item[key];
-          else if (lower.includes('imagem')) n.imagem = item[key];
+      var result = [];
+      for (var i = 0; i < data.length; i++) {
+        var item = data[i];
+        var obj = {};
+        for (var key in item) {
+          var lower = key.toLowerCase();
+          if (lower.indexOf('linha') >= 0) obj.linha = item[key];
+          else if (lower.indexOf('produto') >= 0) obj.produto = item[key];
+          else if (lower.indexOf('tamanho') >= 0) obj.tamanho = item[key];
+          else if (lower.indexOf('ingrediente') >= 0) obj.ingredientes = item[key];
+          else if (lower.indexOf('modo') >= 0) obj.modo = item[key];
+          else if (lower.indexOf('obs') >= 0) obj.obs = item[key];
+          else if (lower.indexOf('imagem') >= 0) obj.imagem = item[key];
         }
-        return n;
-      });
+        result.push(obj);
+      }
+      return result;
     }
 
     function renderMenu(data) {
-      const menu = document.getElementById('menu');
+      var menu = document.getElementById('menu');
       menu.innerHTML = '';
-      const categorias = {};
-      data.forEach(i => {
-        const c = i.linha || 'Outros';
+      var categorias = {};
+      for (var i = 0; i < data.length; i++) {
+        var c = data[i].linha || 'Outros';
         if (!categorias[c]) categorias[c] = [];
-        categorias[c].push(i);
-      });
-
-      for (const c in categorias) {
-        const div = document.createElement('div');
+        categorias[c].push(data[i]);
+      }
+      for (var cat in categorias) {
+        var div = document.createElement('div');
         div.className = 'categoria';
-        div.innerHTML = `<h2>${c}</h2>`;
-
-        const produtosUnicos = {};
-        categorias[c].forEach(p => {
-          const nomeBase = (p.produto || '').trim().toLowerCase();
-          if (!nomeBase) return;
-          if (!produtosUnicos[nomeBase]) produtosUnicos[nomeBase] = [];
-          produtosUnicos[nomeBase].push(p);
-        });
-
-        Object.keys(produtosUnicos).forEach(key => {
-          const p = produtosUnicos[key][0];
-          const btn = document.createElement('button');
+        div.innerHTML = '<h2>' + cat + '</h2>';
+        var produtosUnicos = {};
+        for (var j = 0; j < categorias[cat].length; j++) {
+          var p = categorias[cat][j];
+          var nome = (p.produto || '').toLowerCase();
+          if (!nome) continue;
+          if (!produtosUnicos[nome]) produtosUnicos[nome] = [];
+          produtosUnicos[nome].push(p);
+        }
+        for (var nome in produtosUnicos) {
+          var p = produtosUnicos[nome][0];
+          var btn = document.createElement('button');
           btn.textContent = p.produto;
-          btn.onclick = () => showTamanhos(produtosUnicos[key]);
+          btn.onclick = (function(grupo) {
+            return function() { showTamanhos(grupo); };
+          })(produtosUnicos[nome]);
           div.appendChild(btn);
-        });
-
+        }
         menu.appendChild(div);
       }
     }
 
     function showTamanhos(group) {
-      const menu = document.getElementById('menu');
-      const produto = group[0];
-      menu.innerHTML = `
-        <div class='produto'>
-          <h2>${produto.produto}</h2>
-          <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}'>
-          <h3>Selecione o tamanho:</h3>
-          ${group.map(g => `<button onclick='showDetalhes(${JSON.stringify(g)})'>${g.tamanho || 'Tamanho único'}</button>`).join('')}
-          <br><br>
-          <button class='back-btn' onclick='init()'>Voltar</button>
-        </div>`;
+      var menu = document.getElementById('menu');
+      var produto = group[0];
+      var html = "<div class='produto'><h2>" + produto.produto + "</h2>";
+      html += "<img src='imagens/" + (produto.imagem || "sem_foto.jpg") + "' alt='" + produto.produto + "'>";
+      html += "<h3>Selecione o tamanho:</h3>";
+      for (var i = 0; i < group.length; i++) {
+        html += "<button onclick='showDetalhes(" + JSON.stringify(group[i]).replace(/'/g, "&apos;") + ")'>" + (group[i].tamanho || 'Tamanho único') + "</button>";
+      }
+      html += "<br><br><button class='back-btn' onclick='init()'>Voltar</button></div>";
+      menu.innerHTML = html;
     }
 
-    function showDetalhes(dados) {
-      const menu = document.getElementById('menu');
-      const lista = (texto) => !texto ? '<p>—</p>' : '<ul>' + texto.split(';').map(i => `<li>${i.trim()}</li>`).join('') + '</ul>';
-
-      menu.innerHTML = `
-        <div class='tamanho'>
-          <h2>${dados.produto} - ${dados.tamanho || 'Tamanho único'}</h2>
-          <img src='imagens/${dados.imagem || 'sem_foto.jpg'}' alt='${dados.produto}'>
-          <div class='colunas'>
-            <div class='coluna'>
-              <h3>Ingredientes</h3>
-              ${lista(dados.ingredientes)}
-            </div>
-            <div class='coluna'>
-              <h3>Modo de Preparo</h3>
-              ${lista(dados.modo)}
-            </div>
-          </div>
-          ${dados.obs ? `<p><b>Observações:</b> ${dados.obs}</p>` : ''}
-          <button class='back-btn' onclick='init()'>Voltar ao Início</button>
-        </div>`;
+    function showDetalhes(d) {
+      var menu = document.getElementById('menu');
+      function lista(txt) {
+        if (!txt) return '<p>—</p>';
+        var partes = txt.split(';');
+        var out = '<ul>';
+        for (var i = 0; i < partes.length; i++) {
+          out += '<li>' + partes[i].trim() + '</li>';
+        }
+        out += '</ul>';
+        return out;
+      }
+      var html = "<div class='tamanho'><h2>" + d.produto + " - " + (d.tamanho || 'Tamanho único') + "</h2>";
+      html += "<img src='imagens/" + (d.imagem || "sem_foto.jpg") + "' alt='" + d.produto + "'>";
+      html += "<div class='colunas'><div class='coluna'><h3>Ingredientes</h3>" + lista(d.ingredientes) + "</div>";
+      html += "<div class='coluna'><h3>Modo de Preparo</h3>" + lista(d.modo) + "</div></div>";
+      if (d.obs) html += "<p><b>Observações:</b> " + d.obs + "</p>";
+      html += "<button class='back-btn' onclick='init()'>Voltar ao Início</button></div>";
+      menu.innerHTML = html;
     }
 
-    document.getElementById('updateBtn').addEventListener('click', () => {
-      const input = document.createElement('input');
+    document.getElementById('updateBtn').onclick = function() {
+      var input = document.createElement('input');
       input.type = 'file';
       input.accept = '.xlsx';
-      input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return alert('Nenhum arquivo selecionado');
-        handleFileUpload(file);
+      input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var data = e.target.result;
+          var wb = XLSX.read(data, { type: 'binary' });
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          var normalized = normalizeHeaders(json);
+          localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
+          renderMenu(normalized);
+        };
+        reader.readAsBinaryString(file);
       };
       input.click();
-    });
-
-    function handleFileUpload(file) {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        const normalized = normalizeHeaders(json);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
-        renderMenu(normalized);
-      };
-      reader.readAsArrayBuffer(file);
-    }
+    };
 
     function init() {
-      const cached = localStorage.getItem(CACHE_KEY);
+      var cached = localStorage.getItem(CACHE_KEY);
       if (cached) renderMenu(JSON.parse(cached));
       else loadExcelFile('https://raw.githubusercontent.com/milkshakemixassai/milkshakemix_cardapio/main/modelo_receitas_atualizado.xlsx');
     }
 
-    window.addEventListener('load', init);
+    window.onload = init;
   </script>
 </body>
 </html>
