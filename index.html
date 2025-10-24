@@ -4,7 +4,111 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MilkShakeMiX - Cardápio Digital</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Fredoka One', sans-serif;
+      background-color: #fff5fa;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #ff66a3;
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin: 0;
+    }
+
+    #updateBtn {
+      background-color: white;
+      color: #ff66a3;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #updateBtn:hover {
+      background-color: #ffe0ef;
+      transform: scale(1.05);
+    }
+
+    main {
+      padding: 20px;
+    }
+
+    .categoria {
+      background-color: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin: 20px 0;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .categoria:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+
+    .categoria h2 {
+      color: #ff3399;
+      border-bottom: 2px solid #ffd6e8;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background-color: #ff99cc;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 1em;
+      margin: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #ff66a3;
+    }
+
+    .produto {
+      text-align: center;
+      background-color: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease;
+    }
+
+    .produto img {
+      margin: 15px 0;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .produto p {
+      font-size: 1.1em;
+      text-align: left;
+      margin: 10px 0;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -14,6 +118,7 @@
   <main>
     <div id="menu"></div>
   </main>
+
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     async function loadExcelFile(url) {
@@ -30,7 +135,7 @@
         renderMenu(normalized);
       } catch (err) {
         console.error(err);
-        document.getElementById('menu').innerHTML = `<p style='color:red'>Não foi possível carregar a planilha automaticamente.<br>Use o botão "Atualizar Dados" para selecionar manualmente.</p>`;
+        document.getElementById('menu').innerHTML = `<p style='color:red'>Erro ao carregar planilha. Use o botão Atualizar Dados.</p>`;
       }
     }
 
@@ -84,14 +189,22 @@
       menuDiv.innerHTML = `
         <div class='produto'>
           <h2>${produto.produto || 'Produto sem nome'}</h2>
-          <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}' style='max-width:250px;border-radius:10px;'>
+          <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}' style='max-width:250px;'>
           <p><b>Ingredientes:</b> ${produto.ingredientes || '—'}</p>
           <p><b>Modo de Preparo:</b> ${produto.modo || '—'}</p>
           ${produto.obs ? `<p><b>Observações:</b> ${produto.obs}</p>` : ''}
-          <button onclick='init()'>Voltar ao Menu</button>
+          <button onclick='init()'>Voltar</button>
         </div>
       `;
     }
+
+    document.getElementById('updateBtn').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.xlsx';
+      input.onchange = e => handleFileUpload(e.target.files[0]);
+      input.click();
+    });
 
     function handleFileUpload(file) {
       const reader = new FileReader();
@@ -107,14 +220,6 @@
       };
       reader.readAsArrayBuffer(file);
     }
-
-    document.getElementById('updateBtn').addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.xlsx';
-      input.onchange = e => handleFileUpload(e.target.files[0]);
-      input.click();
-    });
 
     function init() {
       const cached = localStorage.getItem('milkshakeMixData');
