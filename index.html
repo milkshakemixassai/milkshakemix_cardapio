@@ -71,12 +71,23 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       max-width: 250px;
     }
-    .tamanho {
-      background-color: #ffe6f2;
-      margin: 15px 0;
-      padding: 15px;
-      border-radius: 15px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 1em;
+    }
+    th, td {
+      border: 1px solid #ffd6e8;
+      padding: 10px;
       text-align: left;
+    }
+    th {
+      background-color: #ffb3d9;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #fff0f6;
     }
     @keyframes fadeIn {
       from {opacity: 0; transform: translateY(20px);}
@@ -93,7 +104,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    const CACHE_KEY = 'milkshakeMixData_grouped_v1';
+    const CACHE_KEY = 'milkshakeMixData_grouped_v2';
 
     async function loadExcelFile(url) {
       try {
@@ -107,7 +118,6 @@
         localStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
         renderMenu(normalized);
       } catch (err) {
-        console.warn('Erro ao carregar automaticamente:', err);
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) renderMenu(JSON.parse(cached));
         else document.getElementById('menu').innerHTML = '<p style="color:red">Erro ao carregar os dados.</p>';
@@ -173,14 +183,21 @@
         <div class='produto'>
           <h2>${produto.produto}</h2>
           <img src='imagens/${produto.imagem || 'sem_foto.jpg'}' alt='${produto.produto}'>
-          ${group.map(g => `
-            <div class='tamanho'>
-              <h3>${g.tamanho || 'Tamanho único'}</h3>
-              <p><b>Ingredientes:</b> ${g.ingredientes || '—'}</p>
-              <p><b>Modo de Preparo:</b> ${g.modo || '—'}</p>
-              ${g.obs ? `<p><b>Obs:</b> ${g.obs}</p>` : ''}
-            </div>
-          `).join('')}
+          <table>
+            <tr>
+              <th>Tamanho</th>
+              <th>Ingredientes</th>
+              <th>Modo de Preparo</th>
+              <th>Observações</th>
+            </tr>
+            ${group.map(g => `
+              <tr>
+                <td>${g.tamanho || 'Tamanho único'}</td>
+                <td>${g.ingredientes || '—'}</td>
+                <td>${g.modo || '—'}</td>
+                <td>${g.obs || '—'}</td>
+              </tr>`).join('')}
+          </table>
           <button onclick='init()'>Voltar</button>
         </div>`;
     }
